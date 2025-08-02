@@ -6,6 +6,7 @@ const Dashboard = ({ api }) => {
     const [tasks, setTasks] = useState([]);
 
     useEffect(() => {
+        if (!api) return; // רק השורה הזו נוספה
         api.getTasks().then(setTasks);
     }, [api]);
 
