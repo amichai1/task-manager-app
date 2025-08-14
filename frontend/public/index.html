@@ -1,14 +1,175 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="he" dir="rtl">
   <head>
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
-    <title>Task Manager App</title>
+    <meta name="theme-color" content="#4F46E5" />
+    <meta name="description" content="מנהל משימות מתקדם ונוח לשימוש" />
+    <meta name="keywords" content="משימות, ניהול, תכנון, פרודקטיביות" />
+    <meta name="author" content="Task Manager App" />
+    
+    <!-- SEO Meta Tags -->
+    <meta property="og:title" content="מנהל משימות - Task Manager" />
+    <meta property="og:description" content="מנהל משימות מתקדם ונוח לשימוש" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="%PUBLIC_URL%" />
+    <meta property="og:image" content="%PUBLIC_URL%/og-image.png" />
+    
+    <!-- Twitter Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="מנהל משימות - Task Manager" />
+    <meta name="twitter:description" content="מנהל משימות מתקדם ונוח לשימוש" />
+    
+    <!-- Preconnect to external domains for better performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Heebo:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    
+    <!-- Favicon and App Icons -->
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Preload critical resources -->
+    <link rel="preload" href="/api/health" as="fetch" crossorigin="anonymous" />
+    
+    <title>מנהל משימות - Task Manager</title>
+    
+    <!-- Critical CSS for preventing FOUC -->
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      
+      body {
+        font-family: 'Heebo', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        direction: rtl;
+      }
+      
+      #root {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      
+      /* Loading spinner */
+      .loading {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      }
+      
+      .spinner {
+        width: 50px;
+        height: 50px;
+        border: 5px solid rgba(255, 255, 255, 0.3);
+        border-top: 5px solid white;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      
+      /* Error boundary styles */
+      .error-boundary {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        padding: 2rem;
+        text-align: center;
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+        color: white;
+      }
+      
+      .error-boundary h1 {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        font-weight: 600;
+      }
+      
+      .error-boundary p {
+        font-size: 1.1rem;
+        margin-bottom: 2rem;
+        opacity: 0.9;
+      }
+      
+      .error-boundary button {
+        background: white;
+        color: #ee5a24;
+        border: none;
+        padding: 0.75rem 2rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      
+      .error-boundary button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+    </style>
   </head>
   <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
+    <noscript>
+      <div style="display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f8f9fa; text-align: center; padding: 2rem;">
+        <div>
+          <h1 style="color: #dc3545; margin-bottom: 1rem;">JavaScript נדרש</h1>
+          <p style="color: #6c757d; font-size: 1.1rem;">אנא הפעל JavaScript בדפדפן שלך כדי להשתמש באפליקציה זו.</p>
+        </div>
+      </div>
+    </noscript>
+    
+    <div id="root">
+      <!-- Loading state while React app loads -->
+      <div class="loading">
+        <div class="spinner"></div>
+      </div>
+    </div>
+    
+    <!-- Error boundary fallback -->
+    <script>
+      window.addEventListener('error', function(e) {
+        console.error('Global error:', e.error);
+        const root = document.getElementById('root');
+        if (root && !root.querySelector('.error-boundary')) {
+          root.innerHTML = `
+            <div class="error-boundary">
+              <h1>אופס! משהו השתבש</h1>
+              <p>אירעה שגיאה בלתי צפויה. אנא נסה לרענן את הדף.</p>
+              <button onclick="window.location.reload()">רענן דף</button>
+            </div>
+          `;
+        }
+      });
+      
+      // Service worker registration (if needed in the future)
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          // Uncomment when you add a service worker
+          // navigator.serviceWorker.register('/sw.js')
+          //   .then(function(registration) {
+          //     console.log('SW registered: ', registration);
+          //   })
+          //   .catch(function(registrationError) {
+          //     console.log('SW registration failed: ', registrationError);
+          //   });
+        });
+      }
+    </script>
   </body>
 </html>

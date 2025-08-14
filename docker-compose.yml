@@ -1,19 +1,98 @@
-version: '3'
+version: '3.8'
+
 services:
   backend:
-    build: ./backend
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
     ports:
       - '5000:5000'
     environment:
+      - NODE_ENV=development
       - MONGO_URI=mongodb://mongo:27017/taskmanager
-      - JWT_SECRET=your_jwt_secret
+      - JWT_SECRET=your_super_secure_jwt_secret_key_change_in_production
+      - JWT_EXPIRE=30d
+      - FRONTEND_URL=http://localhost:3000,http://frontend:3000
+
     depends_on:
-      - mongo
+      - mongo # רק תלות פשוטה - ללא בדיקת תקינות
+      #mongo:
+       # condition: service_healthy # המתן עד ש-mongo יהיה תקין    volumes:
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    restart: unless-stopped
+    networks:
+      - taskmanager-network
   frontend:
-    build: ./frontend
+    build: 
+      context: ./frontend
+      dockerfile: Dockerfile
     ports:
       - '3000:3000'
+    environment:
+      #- REACT_APP_API_URL=http://backend:5000/api
+      - CHOKIDAR_USEPOLLING=true
+    #environment:
+      - NODE_ENV=development
+      #- REACT_APP_API_URL=/api
+      - REACT_APP_API_URL=http://localhost:5000/api  # הוסף את השורה הזאת
+
+    depends_on:
+      - backend # רק תלות פשוטה
+#      backend:
+ #       condition: service_started # הפרונטאנד צריך שהבקלנד יתחיל
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    restart: unless-stopped
+    networks:
+      - taskmanager-network
+
+
   mongo:
-    image: mongo
+    image: mongo:6.0
     ports:
       - '27017:27017'
+    environment:
+      - MONGO_INITDB_DATABASE=taskmanager
+    volumes:
+      - mongo_data:/data/db
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    #healthcheck: # הוספת בדיקת תקינות ל-MongoDB
+      #test: echo 'db.runCommand("ping").ok' | mongosh --quiet || exit 1
+     # test: echo 'db.runCommand("ping").ok' | mongo --quiet
+      #interval: 10s
+      #timeout: 5s
+      #retries: 5
+      #start_period: 30s # הוסף את השורה הזו
+    restart: unless-stopped
+    networks:
+      - taskmanager-network
+
+  # Optional: MongoDB Express for database management
+  mongo-express:
+    image: mongo-express:latest
+    ports:
+      - '8081:8081'
+    environment:
+      - ME_CONFIG_MONGODB_SERVER=mongo
+      - ME_CONFIG_MONGODB_PORT=27017
+      - ME_CONFIG_BASICAUTH_USERNAME=admin
+      - ME_CONFIG_BASICAUTH_PASSWORD=admin123
+    depends_on:
+      - mongo # רק תלות פשוטה
+      #mongo:
+      #  condition: service_healthy # המתן עד ש-mongo יהיה תקין
+#    command: sh -c "sleep 5 && npm start"
+    restart: unless-stopped
+    networks:
+      - taskmanager-network
+
+volumes:
+  mongo_data:
+    driver: local
+
+networks:
+  taskmanager-network:
+    driver: bridge
